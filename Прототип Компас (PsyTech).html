@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Компас · Цифровой ассистент врача</title>
+<style>
+:root{
+  --blue:#2563eb;--blue-50:#eff6ff;--blue-100:#dbeafe;
+  --purple:#7c3aed;--purple-50:#f5f3ff;
+  --red:#dc2626;--red-50:#fef2f2;
+  --yellow:#d97706;--yellow-50:#fffbeb;--yellow-100:#fef3c7;
+  --green:#059669;--green-50:#ecfdf5;
+  --bg:#f8fafc;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.logo{font-weight:700;font-size:17px;color:var(--purple);display:flex;align-items:center;gap:8px}
+.logo small{font-weight:500;font-size:11px;color:var(--muted);display:block;margin-left:2px}
+.role-switch{display:flex;gap:2px;background:var(--bg);padding:4px;border-radius:10px;border:1px solid var(--border)}
+.role-switch button{border:none;background:transparent;padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;color:var(--muted);transition:.15s}
+.role-switch button.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+main{padding:24px}
+main.desktop{max-width:1180px;margin:0 auto}
+main.mobile-wrap{max-width:420px;margin:0 auto;background:#fff;border-radius:28px;box-shadow:0 8px 40px rgba(15,23,42,.12);padding:24px 20px 20px;min-height:720px}
+
+@media (max-width:500px){
+  .topbar{padding:10px 14px}.logo{font-size:15px}.role-switch button{padding:6px 12px;font-size:12px}
+  main{padding:12px}main.mobile-wrap{border-radius:0;box-shadow:none;min-height:calc(100vh - 60px);padding:20px 16px}
+}
+
+h1{font-size:22px;font-weight:700;margin-bottom:4px}
+h2{font-size:17px;font-weight:700;margin-bottom:12px}
+.muted{color:var(--muted);font-size:13px}
+.page-header{margin-bottom:20px}
+
+.toolbar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-input{padding:10px 14px;border-radius:9px;border:1px solid var(--border);font-size:14px;flex:1;min-width:200px;max-width:320px;background:#fff;color:var(--text)}
+.search-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.filter-chip{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:13px;font-weight:500;color:var(--muted);transition:.15s}
+.filter-chip.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.patient-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border)}
+.patient-table th{text-align:left;padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);font-weight:600}
+.patient-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.patient-table tr:last-child td{border-bottom:none}
+.patient-table tbody tr{cursor:pointer;transition:background .12s}
+.patient-table tbody tr:hover{background:var(--blue-50)}
+.patient-table tr.critical-row{background:var(--red-50)}
+.patient-table tr.critical-row:hover{background:#fee2e2}
+.patient-table tr.attention-row{background:var(--yellow-50)}
+.patient-table tr.attention-row:hover{background:var(--yellow-100)}
+.attention-icon{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-size:13px;background:var(--yellow-50);color:var(--yellow);font-weight:700}
+.attention-icon.red{background:var(--red-50);color:var(--red)}
+
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.dot.green{background:var(--green)}.dot.yellow{background:var(--yellow)}.dot.red{background:var(--red)}
+.status{display:inline-flex;align-items:center;font-size:12px;font-weight:500}
+
+.btn{padding:10px 18px;border-radius:9px;border:none;font-weight:600;font-size:14px;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{background:#6d28d9}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-block{width:100%}.btn-lg{padding:14px 20px;font-size:15px;border-radius:12px}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+.card{background:#fff;border-radius:14px;padding:20px;border:1px solid var(--border);margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px}
+
+.accordion{background:#fff;border-radius:14px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.accordion-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;cursor:pointer;transition:.15s;user-select:none}
+.accordion-header:hover{background:var(--bg)}
+.accordion-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px}
+.accordion-icon{font-size:16px}
+.accordion-chevron{font-size:14px;color:var(--muted);transition:.2s}
+.accordion.open .accordion-chevron{transform:rotate(90deg)}
+.accordion-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border);padding-top:16px}
+.accordion.open .accordion-body{display:block}
+
+.banner{border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;border-left:4px solid;font-size:14px}
+.banner-yellow{background:var(--yellow-50);border-color:var(--yellow);color:#78350f}
+.banner-red{background:var(--red-50);border-color:var(--red);color:#7f1d1d}
+.banner-actions{display:flex;gap:8px;flex-wrap:wrap}
+.banner-actions .btn{padding:7px 14px;font-size:13px}
+
+.patient-critical{background:var(--red);color:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+.patient-critical-title{font-size:15px;font-weight:700;margin-bottom:6px;line-height:1.3}
+.patient-critical-text{font-size:13px;opacity:.95;line-height:1.45;margin-bottom:12px}
+.patient-critical-buttons{display:flex;flex-direction:column;gap:8px}
+.patient-critical-buttons .btn{background:#fff;color:var(--red);font-weight:700;padding:11px;font-size:13px;border:none}
+.patient-critical-buttons .btn:active{opacity:.9}
+.patient-critical-phones{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.patient-critical-phone{background:rgba(255,255,255,.18);border-radius:9px;padding:9px;text-align:center;color:#fff}
+.patient-critical-phone .phone-label{font-size:9px;opacity:.9;text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:2px}
+.patient-critical-phone .phone-num{font-size:16px;font-weight:800}
+
+.profile{display:flex;align-items:center;gap:14px;margin-bottom:4px}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--purple-50);color:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px}
+.profile-info h2{margin-bottom:2px}
+.profile-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:var(--bg);color:var(--muted)}
+.tag.purple{background:var(--purple-50);color:var(--purple)}
+.tag.blue{background:var(--blue-50);color:var(--blue)}
+
+.trend-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px}
+.trend-badge.good{background:var(--green-50);color:var(--green)}
+.trend-badge.bad{background:var(--red-50);color:var(--red)}
+.trend-badge.stable{background:var(--bg);color:var(--muted)}
+
+.line-chart-wrap{max-width:640px;margin:0 auto}
+.line-chart{width:100%;height:auto;display:block;margin-bottom:8px}
+.chart-legend{display:flex;gap:16px;margin-bottom:14px;font-size:12px;flex-wrap:wrap;justify-content:center}
+.chart-legend-item{display:flex;align-items:center;gap:6px}
+.chart-legend-dot{width:10px;height:10px;border-radius:3px}
+.chart-legend-dot.hollow{background:#fff;border:2px solid var(--green)}
+.chart-note{font-size:11px;color:var(--muted);margin-top:10px;font-style:italic;text-align:center}
+
+.event-feed{display:flex;flex-direction:column}
+.event-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.event-item:last-child{border-bottom:none}
+.event-dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.event-dot.blue{background:var(--blue)}.event-dot.purple{background:var(--purple)}
+.event-dot.yellow{background:var(--yellow)}.event-dot.red{background:var(--red)}.event-dot.green{background:var(--green)}
+.event-time{font-size:11px;color:var(--muted);margin-bottom:2px}
+.event-text{font-size:13px;line-height:1.4}
+
+.adverse-table{width:100%;border-collapse:collapse;font-size:13px}
+.adverse-table th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600;letter-spacing:.4px}
+.adverse-table td{padding:9px 10px;border-bottom:1px solid var(--border)}
+.adverse-table tr:last-child td{border-bottom:none}
+.severity-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.severity-mild{background:var(--green-50);color:var(--green)}
+.severity-medium{background:var(--yellow-50);color:var(--yellow)}
+.severity-severe{background:var(--red-50);color:var(--red)}
+
+.contra-list{display:flex;flex-direction:column;gap:6px}
+.contra-item{display:flex;gap:10px;padding:9px 11px;border-radius:8px;background:var(--bg);font-size:12px;align-items:flex-start;line-height:1.45}
+.contra-item.warning{background:var(--yellow-50)}
+.contra-item.danger{background:var(--red-50)}
+.contra-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.ref-list{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.ref-list div{display:flex;gap:8px}
+.ref-list strong{color:var(--text);min-width:120px;flex-shrink:0;font-size:12px}
+.ref-list span{color:var(--muted);line-height:1.4}
+
+.routing-list{display:flex;flex-direction:column;gap:8px}
+.routing-item{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:500}
+.routing-item.mandatory{background:var(--red-50);color:#7f1d1d}
+.routing-item.desirable{background:var(--yellow-50);color:#78350f}
+.routing-icon{font-size:16px;width:20px;text-align:center}
+
+.form-field{margin-bottom:12px}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;display:block}
+.form-input,.form-textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:#fff;color:var(--text)}
+.form-input:focus,.form-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+.form-textarea{resize:vertical;min-height:60px}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+.greeting{margin-bottom:18px}
+.greeting h2{font-size:22px;margin-bottom:4px}
+.greeting .muted{font-size:14px}
+
+.streak-card{background:linear-gradient(135deg,var(--purple-50),var(--blue-50));border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;border:1px solid var(--border)}
+.streak-flame{font-size:30px}
+.streak-info .streak-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:2px}
+.streak-info .streak-value{font-size:17px;font-weight:700;color:var(--purple)}
+.streak-info .streak-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.task-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.task-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;transition:.15s;cursor:pointer}
+.task-card:hover{border-color:var(--blue-100)}
+.task-card.done{background:var(--green-50);border-color:#a7f3d0}
+.task-icon{font-size:24px;margin-bottom:4px}
+.task-title{font-size:12px;font-weight:600;margin-bottom:2px}
+.task-status{font-size:10px;color:var(--muted)}
+.task-card.done .task-status{color:var(--green);font-weight:600}
+
+.task-input-panel{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px}
+.task-input-label{font-size:13px;font-weight:600;margin-bottom:10px}
+.diary-scale{display:flex;gap:6px;flex-wrap:wrap}
+.diary-btn{width:38px;height:38px;border-radius:9px;border:1px solid var(--border);background:#fff;font-weight:600;font-size:13px;color:var(--muted);transition:.15s}
+.diary-btn:hover{border-color:var(--blue-100)}
+.diary-btn.selected{background:var(--blue);border-color:var(--blue);color:#fff}
+
+.quick-links{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.quick-link{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;transition:.15s}
+.quick-link:hover{border-color:var(--blue-100)}
+.quick-link-icon{font-size:24px;margin-bottom:4px}
+.quick-link-title{font-size:12px;font-weight:600}
+
+.action-stack{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.info-note{font-size:11px;color:var(--muted);text-align:center;padding:10px;line-height:1.5}
+
+.question{margin-bottom:20px}
+.question-label{font-weight:600;margin-bottom:10px;font-size:14px}
+.choice-row{display:flex;gap:10px;margin-bottom:10px}
+.choice{flex:1;padding:14px;border-radius:12px;border:2px solid var(--border);background:#fff;font-size:14px;font-weight:600;color:var(--text);transition:.15s;text-align:center}
+.choice:hover{border-color:var(--blue-100)}
+.choice.selected{border-color:var(--green);background:var(--green-50);color:var(--green)}
+.choice.danger-selected{border-color:var(--red);background:var(--red-50);color:var(--red)}
+
+.med-dose{background:var(--bg);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.med-dose.done{background:var(--green-50);border-color:#a7f3d0}
+.med-dose.missed{background:var(--red-50);border-color:#fecaca}
+.med-dose-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.med-dose-title{font-size:13px;font-weight:700}
+.med-dose-time{font-size:11px;color:var(--muted);font-weight:500}
+.med-dose-buttons{display:flex;gap:8px}
+.med-dose-buttons .choice{padding:10px;font-size:13px}
+
+.reason-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.reason-chip{padding:7px 12px;border-radius:18px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--muted);transition:.15s}
+.reason-chip.selected{background:var(--purple-50);border-color:var(--purple);color:var(--purple)}
+
+.symptom-list{display:flex;flex-direction:column;gap:6px}
+.symptom-item{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:#fff;font-size:13px;cursor:pointer;transition:.15s}
+.symptom-item:hover{border-color:var(--blue-100)}
+.symptom-item.checked{background:var(--yellow-50);border-color:var(--yellow)}
+.symptom-item.urgent-checked{background:var(--red-50);border-color:var(--red)}
+.symptom-check{width:18px;height:18px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;margin-top:1px}
+.symptom-item.checked .symptom-check{background:var(--yellow);border-color:var(--yellow)}
+.symptom-item.urgent-checked .symptom-check{background:var(--red);border-color:var(--red)}
+
+/* БЛОК «СРОЧНО» */
+.urgent-block{background:var(--red-50);border:2px solid var(--red);border-radius:14px;padding:16px;margin-bottom:16px}
+.urgent-block-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.urgent-block-icon{font-size:22px}
+.urgent-block-title{font-size:15px;font-weight:700;color:var(--red)}
+.urgent-block-desc{font-size:12px;color:#7f1d1d;line-height:1.5;margin-bottom:12px}
+
+/* БЛОК «ПРОЧИЕ» */
+.other-block{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px}
+.other-block-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.other-block-icon{font-size:20px}
+.other-block-title{font-size:15px;font-weight:700;color:var(--text)}
+.other-block-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px}
+
+.textarea{width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);font-size:13px;resize:vertical;min-height:70px;color:var(--text)}
+.textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+
+.scale-q{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.scale-q.critical{border-color:var(--red);background:#fff5f5}
+.scale-q-label{font-size:13px;font-weight:500;margin-bottom:10px;line-height:1.4}
+.scale-q-label .q-num{color:var(--purple);font-weight:700;margin-right:6px}
+.scale-options{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.scale-option{padding:9px 4px;border-radius:7px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:500;text-align:center;transition:.15s;cursor:pointer;line-height:1.2}
+.scale-option:hover{border-color:var(--blue-100)}
+.scale-option.selected{background:var(--blue);border-color:var(--blue);color:#fff}
+.scale-option.selected.danger{background:var(--red);border-color:var(--red)}
+
+.question-number{display:inline-block;background:var(--purple-50);color:var(--purple);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+
+.emergency{text-align:center;padding:16px 0}
+.emergency-icon{width:72px;height:72px;border-radius:50%;background:var(--red-50);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 18px}
+.emergency h2{font-size:20px;margin-bottom:8px;line-height:1.35}
+.emergency p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px}
+.phone-card{background:var(--red);color:#fff;border-radius:14px;padding:16px;margin-bottom:10px}
+.phone-label{font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:600}
+.phone-number{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.phone-card-outline{background:#fff;border:2px solid var(--red);color:var(--red)}
+.phone-card-outline .phone-number{font-size:22px}
+.emergency-note{background:var(--blue-50);color:var(--blue);border-radius:10px;padding:11px;font-size:12px;font-weight:600;margin:14px 0}
+
+.info-list{display:flex;flex-direction:column;gap:8px}
+.info-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s}
+.info-item:hover{border-color:var(--blue-100)}
+.info-icon{font-size:26px;flex-shrink:0}
+.info-text{flex:1}
+.info-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.info-sub{font-size:11px;color:var(--muted)}
+
+.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tool-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:.15s;text-align:center}
+.tool-card:hover{border-color:var(--blue-100)}
+.tool-emoji{font-size:28px;margin-bottom:6px}
+.tool-title{font-size:12px;font-weight:600;margin-bottom:3px}
+.tool-desc{font-size:10px;color:var(--muted);line-height:1.3}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px}
+.stat-label{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:600;letter-spacing:.4px;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:700;color:var(--blue)}
+.stat-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+.moment-list{display:flex;flex-direction:column;gap:8px}
+.moment-item{background:var(--bg);border-radius:10px;padding:11px 13px;font-size:13px;line-height:1.45;display:flex;gap:9px;align-items:flex-start}
+.moment-icon{font-size:16px;flex-shrink:0}
+
+.reminder-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.reminder-time{font-size:15px;font-weight:700;color:var(--blue);min-width:50px}
+.reminder-info{flex:1}
+.reminder-title{font-size:13px;font-weight:600}
+.reminder-sub{font-size:11px;color:var(--muted)}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(--border);position:relative;transition:.15s;cursor:pointer;flex-shrink:0;border:none}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.15s}
+.toggle.on::after{left:19px}
+
+.back-link{display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:var(--blue);font-size:13px;font-weight:600;padding:0;margin-bottom:14px}
+.back-link:hover{text-decoration:underline}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:slideUp .2s ease-out;max-width:90vw;text-align:center}
+@keyframes slideUp{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.section-title{font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--text)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:300;padding:20px}
+.modal{background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;padding:24px}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.modal-title{font-size:18px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;color:var(--muted);padding:0;line-height:1;cursor:pointer}
+.modal-close:hover{color:var(--text)}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.contact-item{background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.contact-icon{font-size:20px}
+.contact-body{flex:1}
+.contact-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.contact-value{font-size:15px;font-weight:700}
+.contact-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.add-patient-link{display:inline-flex;align-items:center;gap:4px;background:none;border:none;color:var(--blue);font-size:13px;font-weight:600;padding:0}
+.add-patient-link:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">
+    <span>🧭 Компас</span>
+    <small>Цифровой ассистент врача</small>
+  </div>
+  <nav class="role-switch">
+    <button data-action="switch-role" data-role="doctor" class="active">Врач</button>
+    <button data-action="switch-role" data-role="patient">Пациент</button>
+  </nav>
+</header>
+<main id="app"></main>
+
+<script>
+/* ============ STATE ============ */
+const state = {
+  role: 'doctor',
+  doctorScreen: 'list',
+  patientScreen: 'home',
+  doctorFilter: 'all',
+  search: '',
+  selectedPatientId: 'petrov',
+  streak: 5,
+  scalesOpen: false,
+  accordions: {},
+  checkin: {
+    morning: null, evening: null,
+    morningReason: null, eveningReason: null,
+    morningReasonOther: '', eveningReasonOther: ''
+  },
+  activeTask: null,
+  dailyTasks: {
+    mood: { done: true, value: 6 },
+    sleep: { done: true, value: 7 },
+    appetite: { done: false, value: null }
+  },
+  adverse: { symptoms: [], freeText: '' },
+  doctorNotes: {},
+  modal: null,
+  reminders: [
+    { id: 1, time: '08:00', title: 'Утренний приём Авиандра', sub: 'Авиандр 20 мг · за 30 мин до еды', on: true },
+    { id: 2, time: '20:00', title: 'Вечерний приём Авиандра', sub: 'Авиандр 20 мг · за 30 мин до еды', on: true },
+    { id: 3, time: '21:00', title: 'Вечерняя отметка самочувствия', sub: 'Настроение, сон, аппетит', on: true },
+    { id: 4, time: 'Вс', title: 'Еженедельный короткий опрос', sub: '4 вопроса', on: true }
+  ]
+};
+
+/* ============ DATA ============ */
+const patients = [
+  {
+    id: 'petrov', name: 'Петров Иван Сергеевич', shortName: 'Петров И.С.', age: 35,
+    diagnosis: 'ГТР (F41.1)',
+    meds: 'Авиандр 20 мг · 2 р/д (утро / вечер) · за 30 мин до еды',
+    missed7: 2, lastCheckin: 'сегодня, 09:14',
+    alert: { type: 'yellow', text: 'Пациент пропустил приём препарата. Проверьте, если останется время.' },
+    concomitant: [{ name: 'Омепразол 20 мг', warning: null }],
+    adverseEvents: [
+      { date: '22.10', symptom: 'Тошнота', severity: 'mild' },
+      { date: '20.10', symptom: 'Головокружение', severity: 'mild' }
+    ],
+    events: [
+      { time: 'Сегодня 09:14', text: 'Отметка самочувствия: утренний приём ✓, вечерний ✓', dot: 'green' },
+      { time: 'Вчера 21:30', text: 'Отметка самочувствия: утренний ✓, вечерний пропущен (забыл)', dot: 'yellow' },
+      { time: '22.10', text: 'НЯ: тошнота (лёгкая)', dot: 'yellow' }
+    ],
+    diary: { weeks: ['−3 нед', '−2 нед', '−1 нед', 'Сейчас'], mood: [5,5,6,6], sleep: [4,5,6,7], appetite: [5,5,6,6] },
+    weeklySurvey: [3,2,4,3]
+  },
+  {
+    id: 'sokolova', name: 'Соколова Марина Андреевна', shortName: 'Соколова М.А.', age: 44,
+    diagnosis: 'ГТР (F41.1)',
+    meds: 'Авиандр 20 мг · 2 р/д (утро / вечер) · за 30 мин до еды',
+    missed7: 0, lastCheckin: 'сегодня, 08:02',
+    alert: null,
+    concomitant: [{ name: 'Омепразол 20 мг', warning: null }],
+    adverseEvents: [],
+    events: [{ time: 'Сегодня 08:02', text: 'Отметка самочувствия: препарат принят', dot: 'green' }],
+    diary: { weeks: ['−3 нед', '−2 нед', '−1 нед', 'Сейчас'], mood: [7,7,8,8], sleep: [7,8,8,9], appetite: [7,7,8,8] },
+    weeklySurvey: [4,3,2,2]
+  },
+  {
+    id: 'kuznetsov', name: 'Кузнецов Артём Викторович', shortName: 'Кузнецов А.В.', age: 29,
+    diagnosis: 'ГТР (F41.1)',
+    meds: 'Авиандр 20 мг · 2 р/д (утро / вечер) · за 30 мин до еды',
+    missed7: 3, lastCheckin: 'сегодня, 08:40',
+    alert: { type: 'red', text: 'C-SSRS = 4 (намерение без плана). Резкий рост PHQ-9 (10 → 19 за 4 недели). Требуется немедленный контакт.' },
+    concomitant: [],
+    adverseEvents: [{ date: '24.10', symptom: 'Бессонница', severity: 'medium' }],
+    events: [
+      { time: 'Сегодня 08:40', text: 'Пациент прошёл C-SSRS: 4 — критический', dot: 'red' },
+      { time: 'Сегодня 08:35', text: 'Пациент прошёл PHQ-9: 19', dot: 'red' },
+      { time: '24.10', text: 'НЯ: бессонница (средняя)', dot: 'yellow' },
+      { time: 'Вчера 21:10', text: 'Отметка самочувствия: вечерний пропущен (плохо себя чувствую)', dot: 'yellow' }
+    ],
+    diary: { weeks: ['−3 нед', '−2 нед', '−1 нед', 'Сейчас'], mood: [6,5,4,3], sleep: [6,5,4,3], appetite: [6,5,5,4] },
+    weeklySurvey: [5,6,8,9],
+    phq9History: [10,11,12,19]
+  }
+];
+
+const MED_INSTRUCTION = {
+  name: 'АВИАНДР® (маритупирдин), 20 мг',
+  indications: [
+    'Генерализованное тревожное расстройство (ГТР, F41.1)',
+    'Тревожные состояния, в т.ч. после COVID-19, лёгкой/средней степени'
+  ],
+  dosing: 'По 1 таблетке (20 мг) 2 раза в сутки — утром и вечером, за 30 минут до еды. Таблетку проглатывать целиком, не разжёвывая.',
+  contraindications: [
+    'Аллергия на маритупирдин или компоненты препарата',
+    'Эпилепсия или органические поражения головного мозга',
+    'Приём ИМАО и 2 недели после их отмены',
+    'Почечная недостаточность средней/тяжёлой степени (СКФ < 60 мл/мин)',
+    'Печёночная недостаточность (класс A, B, C по Чайлд-Пью)',
+    'Беременность и период грудного вскармливания',
+    'Дети до 18 лет'
+  ],
+  precautions: [
+    'Сердечно-сосудистые заболевания — с осторожностью',
+    'Сахарный диабет / эндокринные заболевания — с осторожностью',
+    'Алкогольная или наркотическая зависимость — с осторожностью',
+    'В период лечения воздержаться от алкоголя',
+    'Возможны головокружение и сонливость — не управлять транспортом',
+    'Содержит лактозу'
+  ],
+  interactions: [
+    'ИМАО (моклобемид, фенелзин, транлиципромин, разагилин и др.) — противопоказано',
+    'Противотревожные: диазепам, алпразолам, алимемазин, гидроксизин',
+    'Нейролептики: кветиапин, рисперидон, галоперидол',
+    'Снотворные: зопиклон, золпидем, фенобарбитал, доксиламин',
+    'Противоаллергические: хлоропирамин, клемастин, цетиризин',
+    'Антидепрессанты и препараты, влияющие на серотонин: сертралин, пароксетин, амитриптилин, литий, зверобой, L-триптофан',
+    'Триптаны: суматриптан, золмитриптан',
+    'Опиоидные анальгетики: трамадол, фентанил',
+    'Ингибиторы CYP2D6: флуоксетин, пароксетин, дифенгидрамин, тербинафин, хинидин, гидроксихлорохин'
+  ],
+  missedDose: 'Если пропустили приём — не принимайте двойную дозу. Примите следующую в обычное время.',
+  overdose: 'Данные о передозировке ограничены. Возможны головокружение, слабость, сонливость, угнетение сознания. В течение 1,5 ч — активированный уголь или промывание желудка. Антидота нет; симптоматическая терапия.'
+};
+
+/* ДЛЯ ВРАЧА — с частотами */
+const ADVERSE_LIST_DOCTOR = [
+  {
+    group: 'Немедленно сообщить врачу',
+    items: [
+      { id: 'rigidity', label: 'Скованность мышц тела', urgent: true },
+      { id: 'trismus', label: 'Напряжение жевательных мышц (тризм)', urgent: true },
+      { id: 'hyperhidrosis', label: 'Повышенная потливость (гипергидроз)', urgent: true },
+      { id: 'hemoglobin', label: 'Снижение уровня гемоглобина', urgent: true }
+    ]
+  },
+  {
+    group: 'Часто (≤ 1 из 10)',
+    items: [
+      { id: 'drowsy', label: 'Сонливость' },
+      { id: 'headache', label: 'Головная боль' },
+      { id: 'dizzy', label: 'Головокружение' },
+      { id: 'asthenia', label: 'Общая слабость (астения)' },
+      { id: 'paresthesia', label: 'Покалывание/онемение в конечностях' }
+    ]
+  },
+  {
+    group: 'Нечасто (≤ 1 из 100)',
+    items: [
+      { id: 'insomnia', label: 'Бессонница' },
+      { id: 'bad_sleep', label: 'Низкое качество сна' },
+      { id: 'anxiety_up', label: 'Усиление тревоги' },
+      { id: 'attention', label: 'Нарушение внимания' },
+      { id: 'dysgeusia', label: 'Нарушение вкуса (дисгевзия)' },
+      { id: 'nausea', label: 'Тошнота' },
+      { id: 'abd_pain', label: 'Боль в верхней части живота' },
+      { id: 'constipation', label: 'Запор' },
+      { id: 'back_pain', label: 'Боль со стороны спины' },
+      { id: 'ck_up', label: 'Повышение уровня креатинфосфокиназы' }
+    ]
+  }
+];
+
+/* ДЛЯ ПАЦИЕНТА — 2 блока: «срочно» и «прочие» */
+const PATIENT_URGENT_SYMPTOMS = [
+  { id: 'rigidity', label: 'Скованность мышц тела' },
+  { id: 'trismus', label: 'Напряжение жевательных мышц (сложно открыть рот)' },
+  { id: 'hyperhidrosis', label: 'Резкая повышенная потливость' },
+  { id: 'fever', label: 'Повышение температуры тела' },
+  { id: 'confusion', label: 'Спутанность сознания, возбуждение' },
+  { id: 'seizure', label: 'Судороги' },
+  { id: 'syncope', label: 'Обморок' },
+  { id: 'hemoglobin', label: 'Выраженная слабость, бледность (возможно снижение гемоглобина)' }
+];
+
+const PATIENT_OTHER_SYMPTOMS = [
+  { id: 'drowsy', label: 'Сонливость' },
+  { id: 'headache', label: 'Головная боль' },
+  { id: 'dizzy', label: 'Головокружение' },
+  { id: 'asthenia', label: 'Общая слабость' },
+  { id: 'paresthesia', label: 'Покалывание или онемение в конечностях' },
+  { id: 'insomnia', label: 'Бессонница' },
+  { id: 'bad_sleep', label: 'Плохое качество сна' },
+  { id: 'anxiety_up', label: 'Усиление тревоги' },
+  { id: 'attention', label: 'Трудности с концентрацией' },
+  { id: 'dysgeusia', label: 'Изменение вкуса' },
+  { id: 'nausea', label: 'Тошнота' },
+  { id: 'abd_pain', label: 'Боль в верхней части живота' },
+  { id: 'constipation', label: 'Запор' },
+  { id: 'back_pain', label: 'Боль в спине' },
+  { id: 'ck_up', label: 'Повышение креатинфосфокиназы (по анализу)' }
+];
+
+/* Все urgent id (для проверки) */
+const ADVERSE_URGENT_IDS = new Set([
+  ...PATIENT_URGENT_SYMPTOMS.map(s => s.id),
+  'rigidity','trismus','hyperhidrosis','hemoglobin','seizure','syncope','fever','confusion'
+]);
+
+const PHQ9_QUESTIONS = [
+  'Мало интереса или удовольствия от привычных дел',
+  'Плохое настроение, подавленность, безнадёжность',
+  'Трудности с засыпанием, прерывистый сон или сонливость',
+  'Плохой аппетит или переедание',
+  'Усталость, упадок сил',
+  'Плохое мнение о себе, чувство неудачи',
+  'Трудности с концентрацией внимания',
+  'Заторможенность или беспокойство в движениях и речи',
+  'Мысли о том, что вам лучше было бы умереть, или о том, чтобы причинить себе вред'
+];
+const GAD7_QUESTIONS = [
+  'Чувство нервозности, тревоги или раздражения',
+  'Неспособность остановить или контролировать беспокойство',
+  'Слишком сильное беспокойство по разным поводам',
+  'Трудности с расслаблением',
+  'Такое беспокойство, что сложно усидеть на месте',
+  'Раздражительность или вспыльчивость',
+  'Ощущение страха, как будто может случиться что-то ужасное'
+];
+const SCALE_OPTIONS = [
+  { v: 0, label: 'Ни разу' }, { v: 1, label: 'Неск. дней' },
+  { v: 2, label: '> половины' }, { v: 3, label: 'Почти каждый' }
+];
+const CSSRS_OPTIONS = [
+  { v: 0, label: 'Нет мыслей о смерти или самоубийстве' },
+  { v: 1, label: 'Пассивные мысли («не хочу жить»), без плана' },
+  { v: 2, label: 'Активные мысли, без способа и плана' },
+  { v: 3, label: 'Активные мысли со способом (без плана) — серьёзный риск' },
+  { v: 4, label: 'Намерение, без чёткого плана' },
+  { v: 5, label: 'Чёткий план и намерение — крайне высокий риск' }
+];
+const PATIENT_PSYCHO = [
+  { icon: '🧠', title: 'Что такое генерализованное тревожное расстройство', sub: '8 мин чтения' },
+  { icon: '💊', title: 'Как работает Авиандр: просто о сложном', sub: '5 мин чтения' },
+  { icon: '🌙', title: 'Тревога и сон: что делать', sub: '6 мин чтения' },
+  { icon: '🫁', title: 'Дыхательные практики при тревоге', sub: '4 мин · аудио' },
+  { icon: '🤝', title: 'Как говорить с близкими о своём состоянии', sub: '7 мин чтения' }
+];
+const PATIENT_TOOLS = [
+  { emoji: '🌬️', title: 'Дыхание 4-7-8', desc: 'Быстрое успокоение' },
+  { emoji: '🖐️', title: 'Заземление 5-4-3-2-1', desc: 'При панике' },
+  { emoji: '💪', title: 'Прогрессивная релаксация', desc: 'Снять напряжение' },
+  { emoji: '🧘', title: 'Майндфулнес 10 минут', desc: 'Медитация' },
+  { emoji: '📖', title: 'Дневник мыслей', desc: 'КПТ-техника' },
+  { emoji: '🚶', title: 'Прогулка 15 минут', desc: 'Активация' }
+];
+
+/* ============ HELPERS ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const escAttr = (s) => String(s ?? '').replace(/"/g, '&quot;');
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+function getPatient(id) { return patients.find(p => p.id === id); }
+function currentPatient() { return getPatient(state.selectedPatientId); }
+
+function regularityMeta(missed7) {
+  if (missed7 === 0) return { dot: 'green', label: 'Нет пропусков' };
+  if (missed7 <= 2) return { dot: 'yellow', label: `${missed7} пропуск${missed7 === 1 ? '' : 'а'}` };
+  return { dot: 'red', label: `${missed7} пропусков` };
+}
+
+function trendOf(values, threshold = 1.5) {
+  if (!values || values.length < 2) return { key: 'stable', label: 'Стабильно' };
+  const diff = values[values.length - 1] - values[0];
+  if (diff >= threshold) return { key: 'good', label: 'Улучшение' };
+  if (diff <= -threshold) return { key: 'bad', label: 'Ухудшение' };
+  return { key: 'stable', label: 'Стабильно' };
+}
+function surveyTrendOf(values, threshold = 1) {
+  if (!values || values.length < 2) return { key: 'stable', label: 'Стабильно' };
+  const diff = values[values.length - 1] - values[0];
+  if (diff <= -threshold) return { key: 'good', label: 'Симптомы: снижаются' };
+  if (diff >= threshold) return { key: 'bad', label: 'Симптомы: нарастают' };
+  return { key: 'stable', label: 'Симптомы: стабильно' };
+}
+function phq9TrendOf(values) {
+  if (!values || values.length < 2) return { key: 'stable', label: 'Стабильно' };
+  const diff = values[values.length - 1] - values[0];
+  if (diff >= 5) return { key: 'bad', label: 'PHQ-9: резкий рост' };
+  if (diff >= 3) return { key: 'bad', label: 'PHQ-9: рост' };
+  if (diff <= -5) return { key: 'good', label: 'PHQ-9: резкое снижение' };
+  if (diff <= -3) return { key: 'good', label: 'PHQ-9: снижение' };
+  return { key: 'stable', label: 'PHQ-9: стабильно' };
+}
+function trendBadge(t) {
+  return `<div class="trend-badge ${t.key}">${t.key === 'good' ? '📈' : t.key === 'bad' ? '📉' : '➖'} ${t.label}</div>`;
+}
+
+function buildLineChart(series, options = {}) {
+  const width = 640, height = 240;
+  const padL = 40, padR = 20, padT = 16, padB = 32;
+  const n = series[0].values.length;
+  const minY = 0, maxY = options.maxY || 10;
+  const chartW = width - padL - padR;
+  const chartH = height - padT - padB;
+  const xStep = n > 1 ? chartW / (n - 1) : 0;
+  const yOf = v => padT + chartH - ((v - minY) / (maxY - minY)) * chartH;
+
+  let grid = '';
+  for (let g = 0; g <= 4; g++) {
+    const y = padT + (chartH / 4) * g;
+    const val = maxY - (maxY - minY) * (g / 4);
+    grid += `<line x1="${padL}" y1="${y}" x2="${width - padR}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+    grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#94a3b8">${Math.round(val)}</text>`;
+  }
+
+  const labels = (options.labels || series[0].values.map((_, i) => i + 1));
+  let xLabels = '';
+  labels.forEach((lab, i) => {
+    const x = padL + xStep * i;
+    xLabels += `<text x="${x}" y="${height - 10}" text-anchor="middle" font-size="11" fill="#94a3b8">${esc(lab)}</text>`;
+  });
+
+  let paths = '', dots = '';
+  series.forEach((s) => {
+    const pts = s.values.map((v, i) => {
+      let y = yOf(v);
+      if (s.shiftIfClose) {
+        const other = s.shiftIfClose.value[i];
+        if (Math.abs(v - other) < 0.3) y -= 3;
+      }
+      return { x: padL + xStep * i, y, trueVal: v };
+    });
+    const d = pts.map((p, i) => (i === 0 ? `M${p.x},${p.y}` : `L${p.x},${p.y}`)).join(' ');
+    const sw = s.width || 3;
+    paths += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>`;
+    const dotFill = s.hollow ? '#fff' : s.color;
+    pts.forEach((p, i) => {
+      dots += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${dotFill}" stroke="${s.color}" stroke-width="2.5"><title>${esc(s.tooltip ? s.tooltip(i, p.trueVal) : p.trueVal)}</title></circle>`;
+    });
+  });
+
+  return `<div class="line-chart-wrap"><svg class="line-chart" viewBox="0 0 ${width} ${height}">
+    ${grid}${xLabels}${paths}${dots}
+  </svg></div>`;
+}
+
+/* ============ MODAL ============ */
+function openModal(html) { state.modal = html; render(); }
+function closeModal() { state.modal = null; render(); }
+
+function renderModal() {
+  if (!state.modal) return '';
+  return `<div class="modal-overlay" data-action="close-modal-overlay">
+    <div class="modal" onclick="event.stopPropagation()">${state.modal}</div>
+  </div>`;
+}
+function grlsModal() {
+  const c = MED_INSTRUCTION;
+  const ind = c.indications.map(x => `<div class="contra-item"><div class="contra-icon">✓</div><div>${esc(x)}</div></div>`).join('');
+  const ci = c.contraindications.map(x => `<div class="contra-item danger"><div class="contra-icon">✕</div><div>${esc(x)}</div></div>`).join('');
+  const pr = c.precautions.map(x => `<div class="contra-item warning"><div class="contra-icon">⚠</div><div>${esc(x)}</div></div>`).join('');
+  const it = c.interactions.map(x => `<div class="contra-item ${x.includes('ИМАО') ? 'danger' : 'warning'}"><div class="contra-icon">${x.includes('ИМАО') ? '✕' : '⚠'}</div><div>${esc(x)}</div></div>`).join('');
+  return `<div class="modal-header">
+      <div class="modal-title">📖 ${esc(c.name)}</div>
+      <button class="modal-close" data-action="close-modal">×</button>
+    </div>
+    <div class="section-title" style="color:var(--green)">Показания</div>
+    <div class="contra-list" style="margin-bottom:14px">${ind}</div>
+    <div class="ref-list" style="margin-bottom:14px">
+      <div><strong>Дозирование:</strong><span>${esc(c.dosing)}</span></div>
+      <div><strong>Пропуск:</strong><span>${esc(c.missedDose)}</span></div>
+      <div><strong>Передозировка:</strong><span>${esc(c.overdose)}</span></div>
+    </div>
+    <div class="section-title" style="color:var(--red)">Противопоказания</div>
+    <div class="contra-list" style="margin-bottom:14px">${ci}</div>
+    <div class="section-title" style="color:var(--yellow)">Особые указания</div>
+    <div class="contra-list" style="margin-bottom:14px">${pr}</div>
+    <div class="section-title" style="color:var(--yellow)">Взаимодействия</div>
+    <div class="contra-list">${it}</div>
+    <div class="muted" style="margin-top:14px;font-size:11px">Источник: инструкция по медицинскому применению АВИАНДР®, ГРЛС.</div>
+    <div class="modal-actions"><button class="btn btn-secondary" data-action="close-modal">Закрыть</button></div>`;
+}
+function contactDoctorModal() {
+  return `<div class="modal-header">
+      <div class="modal-title">📞 Связаться с врачом</div>
+      <button class="modal-close" data-action="close-modal">×</button>
+    </div>
+    <div class="contact-item">
+      <div class="contact-icon">📞</div>
+      <div class="contact-body">
+        <div class="contact-label">Телефон клиники</div>
+        <div class="contact-value">+7 (495) 123-45-67</div>
+        <div class="contact-sub">Пн–Пт 9:00–18:00</div>
+      </div>
+    </div>
+    <div class="contact-item">
+      <div class="contact-icon">🔗</div>
+      <div class="contact-body">
+        <div class="contact-label">Онлайн-запись</div>
+        <div class="contact-value" style="font-size:13px;color:var(--blue)">Записаться на приём</div>
+        <div class="contact-sub">Через сайт клиники</div>
+      </div>
+    </div>
+    <div class="section-title" style="color:var(--red);margin-top:16px">Если вам остро нужна помощь</div>
+    <div class="contact-item" style="background:var(--red-50)">
+      <div class="contact-icon">🆘</div>
+      <div class="contact-body">
+        <div class="contact-label" style="color:var(--red)">Экстренные службы</div>
+        <div class="contact-value" style="color:var(--red);font-size:22px">112</div>
+      </div>
+    </div>
+    <div class="contact-item" style="background:var(--red-50)">
+      <div class="contact-icon">☎️</div>
+      <div class="contact-body">
+        <div class="contact-label" style="color:var(--red)">Телефон доверия</div>
+        <div class="contact-value" style="color:var(--red);font-size:18px">8-800-2000-122</div>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-secondary" data-action="close-modal">Закрыть</button></div>`;
+}
+function notifyPatientModal(patientId) {
+  return `<div class="modal-header">
+      <div class="modal-title">📨 Уведомить пациента</div>
+      <button class="modal-close" data-action="close-modal">×</button>
+    </div>
+    <p class="muted" style="margin-bottom:14px">Короткое системное сообщение. Без чата и ответа.</p>
+    <div class="form-field">
+      <label class="form-label">Текст уведомления</label>
+      <textarea class="form-textarea" placeholder="Например: Врач рекомендует связаться с клиникой для уточнения лечения.">Врач рекомендует связаться с клиникой для уточнения лечения.</textarea>
+    </div>
+    <p class="muted" style="font-size:11px">TODO: уточнить формат уведомления (зависит от процесса в клинике).</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-action="close-modal">Отмена</button>
+      <button class="btn btn-primary" data-action="send-notify" data-id="${patientId}">Отправить</button>
+    </div>`;
+}
+
+/* ============ DOCTOR: LIST ============ */
+function renderDoctorList() {
+  let list = patients.slice();
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    list = list.filter(p => p.name.toLowerCase().includes(q));
+  }
+  if (state.doctorFilter === 'attention') list = list.filter(p => p.alert && p.alert.type === 'yellow');
+  if (state.doctorFilter === 'critical') list = list.filter(p => p.alert && p.alert.type === 'red');
+  if (state.doctorFilter === 'stable') list = list.filter(p => !p.alert);
+
+  const critical = patients.filter(p => p.alert && p.alert.type === 'red').length;
+  const attention = patients.filter(p => p.alert && p.alert.type === 'yellow').length;
+
+  const rows = list.map(p => {
+    const r = regularityMeta(p.missed7);
+    const isCritical = p.alert && p.alert.type === 'red';
+    const isAttention = p.alert && p.alert.type === 'yellow';
+    const rowClass = isCritical ? 'critical-row' : isAttention ? 'attention-row' : '';
+    return `<tr class="${rowClass}" data-action="open-patient" data-id="${p.id}">
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${p.alert ? `<span class="attention-icon ${isCritical ? 'red' : ''}">!</span>` : ''}
+          <div>
+            <strong>${esc(p.shortName)}</strong>
+            <div class="muted" style="font-size:11px">${p.age} лет · ${esc(p.diagnosis)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="status"><span class="dot ${r.dot}"></span>${r.label}</span></td>
+      <td>${isCritical ? '🚨 Критический' : isAttention ? '⚠️ Требует внимания' : '—'}</td>
+      <td>${esc(p.lastCheckin)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1>Пациенты</h1>
+        <p class="muted">Под наблюдением: ${patients.length} · критических: ${critical} · требуют внимания: ${attention}</p>
+      </div>
+      <button class="add-patient-link" data-action="add-patient">+ Добавить пациента</button>
+    </div>
+    <div class="toolbar">
+      <input class="search-input" type="search" placeholder="Поиск по ФИО…" value="${esc(state.search)}" data-action="search" />
+      <div class="filter-chips">
+        <button class="filter-chip ${state.doctorFilter==='all'?'active':''}" data-action="filter" data-val="all">Все</button>
+        <button class="filter-chip ${state.doctorFilter==='critical'?'active':''}" data-action="filter" data-val="critical">Критические (${critical})</button>
+        <button class="filter-chip ${state.doctorFilter==='attention'?'active':''}" data-action="filter" data-val="attention">Требуют внимания (${attention})</button>
+        <button class="filter-chip ${state.doctorFilter==='stable'?'active':''}" data-action="filter" data-val="stable">Без алертов</button>
+      </div>
+    </div>
+    <table class="patient-table">
+      <thead><tr>
+        <th>ФИО</th><th>Регулярность</th><th>Алерты</th><th>Последняя отметка</th>
+      </tr></thead>
+      <tbody>${rows || `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">Ничего не найдено</td></tr>`}</tbody>
+    </table>
+    <div class="muted" style="margin-top:14px;font-size:12px">Клик по пациенту → карточка мониторинга.</div>
+  `;
+}
+
+/* ============ DOCTOR: PATIENT ============ */
+function accordion(id, icon, title, content) {
+  const open = state.accordions[id] === true;
+  return `<div class="accordion ${open ? 'open' : ''}">
+    <div class="accordion-header" data-action="toggle-accordion" data-acc="${id}">
+      <div class="accordion-title"><span class="accordion-icon">${icon}</span>${title}</div>
+      <span class="accordion-chevron">▸</span>
+    </div>
+    <div class="accordion-body">${content}</div>
+  </div>`;
+}
+
+function renderDoctorPatient() {
+  const p = currentPatient();
+  if (!p) return renderDoctorList();
+
+  const alert = p.alert;
+
+  let banner = '';
+  if (alert) {
+    const red = alert.type === 'red';
+    banner = `<div class="banner ${red ? 'banner-red' : 'banner-yellow'}">
+      <div><strong>${red ? '🚨 Критический алерт:' : '⚠️'} </strong>${esc(alert.text)}</div>
+      <div class="banner-actions">
+        <button class="btn btn-secondary" data-action="dismiss-alert" data-id="${p.id}">Просмотрено</button>
+        ${red ? `<button class="btn btn-danger" data-action="notify-patient" data-id="${p.id}">📨 Уведомить пациента</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const d = p.diary;
+  const avgByWeek = [0,1,2,3].map(i => (d.mood[i] + d.sleep[i] + d.appetite[i]) / 3);
+  const trendDynamics = trendOf(avgByWeek, 1.0);
+  const dynamicsChart = buildLineChart([
+    { color: '#7c3aed', values: d.sleep, width: 2.5, hollow: false, tooltip: (i, v) => `Сон (${d.weeks[i]}): ${v}/10` },
+    { color: '#059669', values: d.appetite, width: 2.5, hollow: true, shiftIfClose: { value: d.mood }, tooltip: (i, v) => `Аппетит (${d.weeks[i]}): ${v}/10` },
+    { color: '#2563eb', values: d.mood, width: 3.5, hollow: false, tooltip: (i, v) => `Настроение (${d.weeks[i]}): ${v}/10` }
+  ], { labels: d.weeks, maxY: 10 });
+
+  const trendSurvey = surveyTrendOf(p.weeklySurvey, 1);
+  const weeklyChart = buildLineChart([
+    { color: '#7c3aed', values: p.weeklySurvey, width: 3, tooltip: (i, v) => `Неделя ${i + 1}: ${v}/12` }
+  ], { labels: ['Нед. 1', 'Нед. 2', 'Нед. 3', 'Нед. 4'], maxY: 12 });
+
+  let phq9Block = '';
+  if (p.phq9History) {
+    const trendPhq = phq9TrendOf(p.phq9History);
+    phq9Block = `<div class="card">
+      <div class="card-title">PHQ-9 · 4 недели</div>
+      ${trendBadge(trendPhq)}
+      ${buildLineChart([
+        { color: '#dc2626', values: p.phq9History, width: 3, tooltip: (i, v) => `PHQ-9 (${d.weeks[i]}): ${v}` }
+      ], { labels: d.weeks, maxY: 27 })}
+      <div class="chart-note">Резкий рост — повод для немедленного контакта.</div>
+    </div>`;
+  }
+
+  const events = p.events.map(e => `
+    <div class="event-item">
+      <div class="event-dot ${e.dot}"></div>
+      <div style="flex:1">
+        <div class="event-time">${esc(e.time)}</div>
+        <div class="event-text">${esc(e.text)}</div>
+      </div>
+    </div>`).join('');
+
+  const aeRows = p.adverseEvents.length
+    ? p.adverseEvents.map(a => {
+        const cls = a.severity === 'severe' ? 'severe' : a.severity === 'medium' ? 'medium' : 'mild';
+        const label = a.severity === 'severe' ? 'Тяжёлое' : a.severity === 'medium' ? 'Среднее' : 'Лёгкое';
+        return `<tr><td>${esc(a.date)}</td><td>${esc(a.symptom)}</td>
+          <td><span class="severity-badge severity-${cls}">${label}</span></td></tr>`;
+      }).join('')
+    : `<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:14px">НЯ не зарегистрированы</td></tr>`;
+
+  const contra = p.concomitant.length
+    ? p.concomitant.map(c => `
+        <div class="contra-item ${c.warning ? 'warning' : ''}">
+          <div class="contra-icon">${c.warning ? '⚠' : '✓'}</div>
+          <div><strong>${esc(c.name)}</strong>${c.warning ? ' — ' + esc(c.warning) : ' — взаимодействий не выявлено'}</div>
+        </div>`).join('')
+    : `<div class="contra-item"><div class="contra-icon">✓</div><div>Сопутствующих препаратов нет</div></div>`;
+
+  const notes = state.doctorNotes[p.id] || { phq9:'', gad7:'', cssrs:'', hamA:'', hamD:'', otherTests:'', impression:'', note:'' };
+
+  const grlsContent = `
+    <div class="ref-list" style="margin-bottom:12px">
+      <div><strong>МНН:</strong><span>АВИАНДР® (маритупирдин), 20 мг</span></div>
+      <div><strong>Дозирование:</strong><span>2 р/д (утро/вечер), за 30 мин до еды</span></div>
+    </div>
+    <button class="btn btn-secondary btn-sm" data-action="open-grls">📖 Открыть полную инструкцию ГРЛС</button>
+  `;
+  const adverseContent = `
+    <table class="adverse-table">
+      <thead><tr><th>Дата</th><th>Симптом</th><th>Тяжесть</th></tr></thead>
+      <tbody>${aeRows}</tbody>
+    </table>
+  `;
+  const routingContent = `
+    <div class="routing-list">
+      <div class="routing-item mandatory"><span class="routing-icon">🔴</span><span>Обязательно: наблюдение психиатра</span></div>
+      <div class="routing-item desirable"><span class="routing-icon">🟡</span><span>Желательно: КПТ-психотерапия</span></div>
+    </div>
+  `;
+  const doctorEvalContent = `
+    <div class="form-field">
+      <label class="form-label">Дата приёма</label>
+      <input class="form-input" value="18.10.2026" />
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label class="form-label">PHQ-9</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="phq9" value="${escAttr(notes.phq9)}" placeholder="—" /></div>
+      <div class="form-field"><label class="form-label">GAD-7</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="gad7" value="${escAttr(notes.gad7)}" placeholder="—" /></div>
+      <div class="form-field"><label class="form-label">C-SSRS</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="cssrs" value="${escAttr(notes.cssrs)}" placeholder="—" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label class="form-label">HAM-A</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="hamA" value="${escAttr(notes.hamA)}" placeholder="—" /></div>
+      <div class="form-field"><label class="form-label">HAM-D</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="hamD" value="${escAttr(notes.hamD)}" placeholder="—" /></div>
+      <div class="form-field"><label class="form-label">Другие тесты</label>
+        <input class="form-input" data-action="note-input" data-id="${p.id}" data-field="otherTests" value="${escAttr(notes.otherTests)}" placeholder="—" /></div>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Клиническое впечатление</label>
+      <textarea class="form-textarea" data-action="note-input" data-id="${p.id}" data-field="impression" placeholder="Кратко…">${esc(notes.impression)}</textarea>
+    </div>
+    <div class="form-field">
+      <label class="form-label">Комментарий врача (личная заметка)</label>
+      <textarea class="form-textarea" data-action="note-input" data-id="${p.id}" data-field="note" placeholder="Только для врача…">${esc(notes.note)}</textarea>
+    </div>
+    <div class="muted" style="font-size:11px">Все шкалы заполняет врач на приёме. В финале — черновик для переноса в ЭМК.</div>
+  `;
+  const concomitantContent = `<div class="contra-list">${contra}</div>`;
+
+  return `
+    <button class="back-link" data-action="back-to-list">← К списку пациентов</button>
+
+    <div class="card">
+      <div class="profile">
+        <div class="avatar">ПИ</div>
+        <div class="profile-info" style="flex:1">
+          <h2>${esc(p.name)}</h2>
+          <div class="muted">${p.age} лет · ${esc(p.diagnosis)}</div>
+          <div class="profile-tags">
+            <span class="tag purple">💊 ${esc(p.meds)}</span>
+            <span class="tag">Регулярность: ${regularityMeta(p.missed7).label}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${banner}
+
+    <div class="card">
+      <div class="card-title">Динамика самочувствия · 4 недели</div>
+      ${trendBadge(trendDynamics)}
+      <div class="chart-legend">
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--blue)"></div>Настроение</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--purple)"></div>Сон</div>
+        <div class="chart-legend-item"><div class="chart-legend-dot hollow"></div>Аппетит</div>
+      </div>
+      ${dynamicsChart}
+      <div class="chart-note">Средние за неделю по дневнику пациента. Диапазон 1–10. Аппетит — полые точки.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Еженедельный короткий опрос · 4 недели</div>
+      ${trendBadge(trendSurvey)}
+      ${weeklyChart}
+      <div class="chart-note">Сумма 4 вопросов (0–12). Чем выше — тем выраженнее симптомы.</div>
+    </div>
+
+    ${phq9Block}
+
+    <div class="card">
+      <div class="card-title">Лента событий между приёмами</div>
+      <div class="event-feed">${events}</div>
+      <div class="chart-note">Только то, что отметил пациент в приложении.</div>
+    </div>
+
+    ${alert && alert.type === 'red' ? `
+      <div class="card">
+        <div class="card-title">Связаться с пациентом</div>
+        <button class="btn btn-danger btn-block" data-action="notify-patient" data-id="${p.id}">📨 Уведомить пациента</button>
+        <div class="muted" style="margin-top:10px;font-size:11px">Короткое системное сообщение. Без чата и ответа.</div>
+      </div>` : ''}
+
+    ${accordion('grls', '📖', 'Справка по препарату · ГРЛС', grlsContent)}
+    ${accordion('adverse', '⚠️', 'Журнал нежелательных явлений', adverseContent)}
+    ${accordion('routing', '🧭', 'Маршрутизация', routingContent)}
+    ${accordion('eval', '📝', 'Оценка врачом (черновик для ЭМК)', doctorEvalContent)}
+    ${accordion('concomitant', '💊', 'Сопутствующие препараты', concomitantContent)}
+  `;
+}
+
+/* ============ PATIENT: HOME ============ */
+function renderPatientHome() {
+  const p = currentPatient();
+  const alert = p.alert;
+
+  let alertBanner = '';
+  if (alert && alert.type === 'red') {
+    alertBanner = `<div class="patient-critical">
+      <div class="patient-critical-title">🚨 Ваше состояние требует срочной связи с врачом</div>
+      <div class="patient-critical-text">Пожалуйста, свяжитесь с клиникой сегодня. Врач уже получил уведомление.</div>
+      <div class="patient-critical-buttons">
+        <button class="btn" data-action="open-contact-doctor">📞 Позвонить в клинику</button>
+        <button class="btn" data-action="open-contact-doctor">📅 Записаться на приём</button>
+      </div>
+      <div class="patient-critical-phones">
+        <div class="patient-critical-phone"><div class="phone-label">Экстренно</div><div class="phone-num">112</div></div>
+        <div class="patient-critical-phone"><div class="phone-label">Доверие</div><div class="phone-num">8-800-2000-122</div></div>
+      </div>
+    </div>`;
+  } else if (alert && alert.type === 'yellow') {
+    alertBanner = `<div class="banner banner-yellow">
+      <div><strong>⚠️ Врач рекомендует проверить приём препарата.</strong> Свяжитесь с клиникой, если нужно уточнить.</div>
+      <div class="banner-actions">
+        <button class="btn btn-primary btn-sm" data-action="open-contact-doctor">Связаться с клиникой</button>
+      </div>
+    </div>`;
+  }
+
+  const tasks = [
+    { key: 'mood', icon: '😊', title: 'Настроение' },
+    { key: 'sleep', icon: '😴', title: 'Сон' },
+    { key: 'appetite', icon: '🍽️', title: 'Аппетит' }
+  ];
+
+  const doneCount = tasks.filter(t => state.dailyTasks[t.key].done).length;
+  const allDone = doneCount === tasks.length;
+  const taskSummary = allDone
+    ? `<div style="text-align:center;padding:6px 0 12px;font-size:14px;font-weight:600;color:var(--green)">Все задания на сегодня выполнены 😊</div>`
+    : `<div class="muted" style="margin-bottom:10px;font-size:12px">Осталось заполнить: ${doneCount} из ${tasks.length}</div>`;
+
+  const taskCards = tasks.map(t => {
+    const task = state.dailyTasks[t.key];
+    return `<div class="task-card ${task.done ? 'done' : ''}" data-action="open-task" data-key="${t.key}">
+      <div class="task-icon">${t.icon}</div>
+      <div class="task-title">${t.title}</div>
+      <div class="task-status">${task.done ? '✓ ' + task.value + '/10' : 'Не заполнено'}</div>
+    </div>`;
+  }).join('');
+
+  let taskInput = '';
+  if (state.activeTask) {
+    const t = state.activeTask;
+    const labels = { mood: 'Оцените настроение (1–10)', sleep: 'Оцените качество сна (1–10)', appetite: 'Оцените аппетит (1–10)' };
+    const btns = Array.from({ length: 10 }, (_, i) => i + 1).map(n =>
+      `<button class="diary-btn ${state.dailyTasks[t].value == n ? 'selected' : ''}" data-action="set-task-value" data-key="${t}" data-val="${n}">${n}</button>`
+    ).join('');
+    taskInput = `<div class="task-input-panel">
+      <div class="task-input-label">${labels[t]}</div>
+      <div class="diary-scale">${btns}</div>
+    </div>`;
+  }
+
+  return `
+    <div class="greeting">
+      <h2>Здравствуйте, Иван 👋</h2>
+      <p class="muted">Как вы сегодня?</p>
+    </div>
+
+    ${alertBanner}
+
+    <div class="streak-card">
+      <div class="streak-flame">🔥</div>
+      <div class="streak-info">
+        <div class="streak-title">Забота о себе</div>
+        <div class="streak-value">${state.streak} дней подряд</div>
+        <div class="streak-sub">Отмечайте каждый день — это помогает врачу видеть динамику</div>
+      </div>
+    </div>
+
+    <div class="action-stack">
+      <button class="btn btn-primary btn-lg btn-block" data-action="open-checkin">✓ Отметить приём</button>
+      <button class="btn btn-secondary btn-block" data-action="open-adverse">⚠️ Отметить неприятные симптомы</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Задания на сегодня</div>
+      ${taskSummary}
+      <div class="task-grid">${taskCards}</div>
+      ${taskInput}
+    </div>
+
+    <div class="quick-links">
+      <div class="quick-link" data-action="open-psycho"><div class="quick-link-icon">📚</div><div class="quick-link-title">Психообразование</div></div>
+      <div class="quick-link" data-action="open-selfhelp"><div class="quick-link-icon">🧘</div><div class="quick-link-title">Самопомощь</div></div>
+      <div class="quick-link" data-action="open-stats"><div class="quick-link-icon">📊</div><div class="quick-link-title">Статистика</div></div>
+      <div class="quick-link" data-action="open-reminders"><div class="quick-link-icon">🔔</div><div class="quick-link-title">Напоминания</div></div>
+    </div>
+
+    <button class="btn btn-secondary btn-block" data-action="toggle-scales" style="margin-bottom:10px">
+      ${state.scalesOpen ? '▾' : '▸'} Дополнительно
+    </button>
+    ${state.scalesOpen ? `
+      <div class="card">
+        <div class="card-title">Шкалы</div>
+        <div class="info-note" style="text-align:left;padding:0 0 10px">
+          Это необязательные опросники. Врач сам решит, когда их проводить. Пройдите, если хотите — результаты увидит врач.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-secondary btn-block" data-action="open-phq9">PHQ-9 · раз в 2–4 недели</button>
+          <button class="btn btn-secondary btn-block" data-action="open-gad7">GAD-7 · раз в 2–4 недели</button>
+          <button class="btn btn-secondary btn-block" data-action="open-cssrs">C-SSRS · по показаниям / раз в месяц</button>
+        </div>
+      </div>` : ''}
+
+    <div class="info-note">Задания — каждый день. Короткий опрос — раз в неделю.<br>Клинические решения принимает врач.</div>
+  `;
+}
+
+/* ============ PATIENT: CHECK-IN ============ */
+function renderPatientCheckin() {
+  const c = state.checkin;
+  const reasons = ['Забыл(а)', 'Плохо себя чувствую', 'Другое'];
+
+  function doseRow(key, title, time, value, reason, other) {
+    const done = value === true;
+    const missed = value === false;
+    const cls = done ? 'done' : missed ? 'missed' : '';
+    return `<div class="med-dose ${cls}">
+      <div class="med-dose-header">
+        <div class="med-dose-title">${title}</div>
+        <div class="med-dose-time">${time} · за 30 мин до еды</div>
+      </div>
+      <div class="med-dose-buttons">
+        <button class="choice ${done ? 'selected' : ''}" data-action="set-dose" data-key="${key}" data-val="yes">✓ Принял</button>
+        <button class="choice ${missed ? 'danger-selected' : ''}" data-action="set-dose" data-key="${key}" data-val="no">✗ Пропустил</button>
+      </div>
+      ${missed ? `
+        <div class="reason-row">
+          ${reasons.map(r => `<button class="reason-chip ${reason === r ? 'selected' : ''}" data-action="set-reason" data-key="${key}" data-val="${esc(r)}">${esc(r)}</button>`).join('')}
+        </div>
+        ${reason === 'Другое' ? `<textarea class="textarea" style="margin-top:8px" placeholder="Кратко опишите причину…" data-action="reason-other" data-key="${key}">${esc(other)}</textarea>` : ''}
+      ` : ''}
+    </div>`;
+  }
+
+  return `
+    <button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:16px">Отметить приём</h2>
+
+    <div class="question">
+      <div class="question-label">1. Приём Авиандра</div>
+      ${doseRow('morning', 'Утренний приём', '08:00', c.morning, c.morningReason, c.morningReasonOther)}
+      ${doseRow('evening', 'Вечерний приём', '20:00', c.evening, c.eveningReason, c.eveningReasonOther)}
+      <div class="muted" style="margin-top:6px;font-size:11px">В дальнейшем здесь можно будет отмечать несколько препаратов.</div>
+    </div>
+
+    <div class="question">
+      <div class="question-label">2. Неприятные симптомы</div>
+      <button class="btn btn-secondary btn-block" data-action="open-adverse">⚠️ Отметить неприятные симптомы</button>
+      <div class="muted" style="margin-top:8px;font-size:11px">Если есть что отметить — перейдите на отдельный экран. Подробности увидит врач.</div>
+    </div>
+
+    <button class="btn btn-primary btn-lg btn-block" data-action="submit-checkin">Отправить</button>
+  `;
+}
+
+/* ============ PATIENT: ADVERSE (2 блока: срочно + прочие) ============ */
+function renderPatientAdverse() {
+  const a = state.adverse;
+
+  const urgentItems = PATIENT_URGENT_SYMPTOMS.map(s => {
+    const checked = a.symptoms.includes(s.id);
+    return `<div class="symptom-item ${checked ? 'urgent-checked' : ''}" data-action="toggle-adverse" data-id="${s.id}">
+      <div class="symptom-check">${checked ? '✓' : ''}</div>
+      <div>${esc(s.label)}</div>
+    </div>`;
+  }).join('');
+
+  const otherItems = PATIENT_OTHER_SYMPTOMS.map(s => {
+    const checked = a.symptoms.includes(s.id);
+    return `<div class="symptom-item ${checked ? 'checked' : ''}" data-action="toggle-adverse" data-id="${s.id}">
+      <div class="symptom-check">${checked ? '✓' : ''}</div>
+      <div>${esc(s.label)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:14px">Неприятные симптомы</h2>
+    <p class="muted" style="margin-bottom:16px;font-size:12px">Отметьте всё, что вас беспокоит. Важно не то, как часто это бывает у других, а то, что чувствуете вы.</p>
+
+    <div class="urgent-block">
+      <div class="urgent-block-header">
+        <div class="urgent-block-icon">🚨</div>
+        <div class="urgent-block-title">Срочно сообщите врачу</div>
+      </div>
+      <div class="urgent-block-desc">
+        Это может быть признаком серьёзной реакции, в том числе серотонинового синдрома. Если отметили что-то из этого — сразу позвоните в клинику.
+      </div>
+      <div class="symptom-list">${urgentItems}</div>
+    </div>
+
+    <div class="other-block">
+      <div class="other-block-header">
+        <div class="other-block-icon">⚠️</div>
+        <div class="other-block-title">Нежелательные симптомы</div>
+      </div>
+      <div class="other-block-desc">
+        Сами по себе не опасны, но если появляются часто — врач может пересмотреть терапию или назначить обследование.
+      </div>
+      <div class="symptom-list">${otherItems}</div>
+    </div>
+
+    <div class="muted" style="margin-top:4px;margin-bottom:6px">Свободное описание (необязательно):</div>
+    <textarea class="textarea" placeholder="Опишите, что вас беспокоит…" data-action="adverse-text">${esc(a.freeText)}</textarea>
+    <button class="btn btn-primary btn-lg btn-block" data-action="submit-adverse" style="margin-top:14px">Отправить врачу</button>
+  `;
+}
+
+/* ============ PATIENT: SCALES ============ */
+function renderPatientScale(type) {
+  const isPhq = type === 'phq9';
+  const isCssrs = type === 'cssrs';
+
+  if (isCssrs) {
+    const opts = CSSRS_OPTIONS.map(o => `
+      <button class="scale-option ${state.cssrs === o.v ? 'selected' : ''} ${o.v >= 3 && state.cssrs === o.v ? 'danger' : ''}"
+        style="padding:14px 12px;text-align:left;font-size:13px;grid-column:span 4;margin-bottom:6px"
+        data-action="cssrs-answer" data-v="${o.v}">${esc(o.label)}</button>`).join('');
+    return `<button class="back-link" data-action="back-home">← На главную</button>
+      <div class="question-number">C-SSRS · по показаниям</div>
+      <h2 style="margin-bottom:6px">Оценка суицидального риска</h2>
+      <p class="muted" style="margin-bottom:16px;font-size:12px">Выберите наиболее подходящий вариант за последний месяц.</p>
+      <div class="scale-options" style="grid-template-columns:1fr">${opts}</div>
+      <button class="btn btn-danger btn-lg btn-block" data-action="submit-cssrs" style="margin-top:16px">Отправить</button>
+      <div class="info-note">≥ 3 — серьёзный риск. ≥ 5 или суицидальное поведение — экстренная помощь.</div>`;
+  }
+
+  const questions = isPhq ? PHQ9_QUESTIONS : GAD7_QUESTIONS;
+  const values = isPhq ? state.phq9 : state.gad7;
+  const items = questions.map((q, i) => {
+    const critical = isPhq && i === 8;
+    const val = values[i];
+    const opts = SCALE_OPTIONS.map(o => `
+      <button class="scale-option ${val === o.v ? 'selected' : ''} ${critical && o.v > 0 && val === o.v ? 'danger' : ''}"
+        data-action="${isPhq ? 'phq9-answer' : 'gad7-answer'}" data-q="${i}" data-v="${o.v}">${o.label}</button>`).join('');
+    return `<div class="scale-q ${critical ? 'critical' : ''}">
+      <div class="scale-q-label"><span class="q-num">${i + 1}.</span>${esc(q)}${critical ? ' <span style="color:var(--red);font-size:11px">(критический)</span>' : ''}</div>
+      <div class="scale-options">${opts}</div>
+    </div>`;
+  }).join('');
+
+  return `<button class="back-link" data-action="back-home">← На главную</button>
+    <div class="question-number">${isPhq ? 'PHQ-9 · раз в 2–4 недели' : 'GAD-7 · раз в 2–4 недели'}</div>
+    <h2 style="margin-bottom:6px">${isPhq ? 'Шкала PHQ-9' : 'Шкала GAD-7'}</h2>
+    <p class="muted" style="margin-bottom:16px;font-size:12px">Необязательный опросник. Результат увидит врач.</p>
+    ${items}
+    <button class="btn btn-purple btn-lg btn-block" data-action="${isPhq ? 'submit-phq9' : 'submit-gad7'}" style="margin-top:12px">Отправить</button>
+    ${isPhq ? `<div class="info-note">Вопрос 9 — критический. Любой ответ > 0 открывает экстренный экран и отправляет алерт врачу.</div>` : ''}`;
+}
+
+/* ============ PATIENT: OTHER ============ */
+function renderPatientPsycho() {
+  return `<button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:16px">Психообразование</h2>
+    <div class="info-list">
+      ${PATIENT_PSYCHO.map(i => `<div class="info-item" data-action="read-article">
+        <div class="info-icon">${i.icon}</div>
+        <div class="info-text"><div class="info-title">${esc(i.title)}</div><div class="info-sub">${esc(i.sub)}</div></div>
+      </div>`).join('')}
+    </div>`;
+}
+function renderPatientSelfhelp() {
+  return `<button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:16px">Самопомощь</h2>
+    <div class="tool-grid">
+      ${PATIENT_TOOLS.map(t => `<div class="tool-card" data-action="open-tool">
+        <div class="tool-emoji">${t.emoji}</div>
+        <div class="tool-title">${esc(t.title)}</div>
+        <div class="tool-desc">${esc(t.desc)}</div>
+      </div>`).join('')}
+    </div>
+    <div class="info-note">Инструменты не заменяют терапию.</div>`;
+}
+function renderPatientStats() {
+  const mood = [5,6,5,6,7,6,7];
+  const sleep = [5,5,6,6,7,6,7];
+  const appetite = [5,5,6,6,6,7,7];
+  const bars = (arr, cls) => arr.map(v => `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:60px">
+    <div style="background:${cls};border-radius:3px 3px 0 0;height:${v * 6}px" title="${v}/10"></div>
+  </div>`).join('');
+
+  return `<button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:16px">Статистика</h2>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Дней подряд</div><div class="stat-value">${state.streak} 🔥</div><div class="stat-sub">забота о себе</div></div>
+      <div class="stat-card"><div class="stat-label">Всего отметок</div><div class="stat-value">32</div><div class="stat-sub">за 30 дней</div></div>
+    </div>
+    <div class="card"><div class="card-title">Настроение · 7 дней</div><div style="display:flex;gap:4px;align-items:flex-end">${bars(mood, 'var(--blue)')}</div></div>
+    <div class="card"><div class="card-title">Сон · 7 дней</div><div style="display:flex;gap:4px;align-items:flex-end">${bars(sleep, 'var(--purple)')}</div></div>
+    <div class="card"><div class="card-title">Аппетит · 7 дней</div><div style="display:flex;gap:4px;align-items:flex-end">${bars(appetite, 'var(--green)')}</div></div>
+    <div class="card">
+      <div class="card-title">Важные моменты</div>
+      <div class="moment-list">
+        <div class="moment-item"><div class="moment-icon">📉</div><div>3 дня подряд сон ниже 6/10</div></div>
+        <div class="moment-item"><div class="moment-icon">📈</div><div>Настроение улучшилось на 2 балла за неделю</div></div>
+        <div class="moment-item"><div class="moment-icon">💊</div><div>2 пропуска приёма за 14 дней</div></div>
+      </div>
+    </div>
+    <div class="info-note">Эти графики помогают вам и врачу видеть динамику. Они не являются диагнозом.</div>`;
+}
+function renderPatientReminders() {
+  return `<button class="back-link" data-action="back-home">← На главную</button>
+    <h2 style="margin-bottom:16px">Напоминания</h2>
+    ${state.reminders.map(r => `<div class="reminder-item">
+      <div class="reminder-time">${esc(r.time)}</div>
+      <div class="reminder-info">
+        <div class="reminder-title">${esc(r.title)}</div>
+        <div class="reminder-sub">${esc(r.sub)}</div>
+      </div>
+      <button class="toggle ${r.on ? 'on' : ''}" data-action="toggle-reminder" data-id="${r.id}"></button>
+    </div>`).join('')}
+    <div class="info-note">Напоминания помогают не забывать о приёме препарата и отметке самочувствия.</div>`;
+}
+function renderPatientEmergency() {
+  return `<div class="emergency">
+    <div class="emergency-icon">🆘</div>
+    <h2>Вам нужна поддержка.<br>Пожалуйста, не оставайтесь одни.</h2>
+    <p>Позвоните по одному из номеров или свяжитесь с врачом прямо сейчас.</p>
+    <div class="phone-card"><div class="phone-label">Экстренные службы</div><div class="phone-number">112</div></div>
+    <div class="phone-card phone-card-outline"><div class="phone-label">Телефон доверия</div><div class="phone-number">8-800-2000-122</div></div>
+    <button class="btn btn-danger btn-lg btn-block" data-action="open-contact-doctor" style="margin-top:8px">📞 Связаться с врачом</button>
+    <div class="emergency-note">✓ Врач получил экстренное уведомление</div>
+    <button class="btn btn-secondary btn-block" data-action="back-home">Вернуться на главную</button>
+  </div>`;
+}
+
+/* ============ ROUTER ============ */
+function render() {
+  const app = $('#app');
+  document.querySelectorAll('.role-switch button').forEach(b =>
+    b.classList.toggle('active', b.dataset.role === state.role));
+
+  if (state.role === 'doctor') {
+    app.className = 'desktop';
+    app.innerHTML = state.doctorScreen === 'list' ? renderDoctorList() : renderDoctorPatient();
+  } else {
+    app.className = 'mobile-wrap';
+    switch (state.patientScreen) {
+      case 'home': app.innerHTML = renderPatientHome(); break;
+      case 'checkin': app.innerHTML = renderPatientCheckin(); break;
+      case 'adverse': app.innerHTML = renderPatientAdverse(); break;
+      case 'phq9': app.innerHTML = renderPatientScale('phq9'); break;
+      case 'gad7': app.innerHTML = renderPatientScale('gad7'); break;
+      case 'cssrs': app.innerHTML = renderPatientScale('cssrs'); break;
+      case 'psycho': app.innerHTML = renderPatientPsycho(); break;
+      case 'selfhelp': app.innerHTML = renderPatientSelfhelp(); break;
+      case 'stats': app.innerHTML = renderPatientStats(); break;
+      case 'reminders': app.innerHTML = renderPatientReminders(); break;
+      case 'emergency': app.innerHTML = renderPatientEmergency(); break;
+      default: app.innerHTML = renderPatientHome();
+    }
+  }
+
+  const modalWrap = document.createElement('div');
+  modalWrap.innerHTML = renderModal();
+  if (modalWrap.firstChild) app.appendChild(modalWrap.firstChild);
+}
+
+/* ============ ACTIONS ============ */
+function submitCheckin() {
+  const c = state.checkin;
+  if (c.morning === null && c.evening === null) {
+    showToast('Отметьте приём хотя бы одного приёма');
+    return;
+  }
+  const p = currentPatient();
+  state.streak += 1;
+  p.lastCheckin = 'только что';
+
+  const missedCount = (c.morning === false ? 1 : 0) + (c.evening === false ? 1 : 0);
+  if (missedCount > 0) {
+    p.missed7 += missedCount;
+    if (p.missed7 >= 2 && !p.alert) {
+      p.alert = { type: 'yellow', text: 'Пациент пропустил приём препарата. Проверьте, если останется время.' };
+    }
+  }
+  const text = `Отметка самочувствия: утренний ${c.morning === true ? '✓' : c.morning === false ? '✗ (' + (c.morningReason || 'причина') + ')' : '—'}, вечерний ${c.evening === true ? '✓' : c.evening === false ? '✗ (' + (c.eveningReason || 'причина') + ')' : '—'}`;
+  p.events.unshift({ time: 'Только что', text, dot: missedCount ? 'yellow' : 'green' });
+
+  state.checkin = { morning: null, evening: null, morningReason: null, eveningReason: null, morningReasonOther: '', eveningReasonOther: '' };
+  state.patientScreen = 'home';
+  render();
+  showToast('Отметка отправлена ✓');
+}
+
+function submitAdverse() {
+  const a = state.adverse;
+  if (!a.symptoms.length && !a.freeText.trim()) { showToast('Отметьте хотя бы один симптом'); return; }
+  const p = currentPatient();
+  const urgent = a.symptoms.some(id => ADVERSE_URGENT_IDS.has(id));
+
+  const labels = a.symptoms.map(id => {
+    const u = PATIENT_URGENT_SYMPTOMS.find(s => s.id === id);
+    if (u) return u.label;
+    const o = PATIENT_OTHER_SYMPTOMS.find(s => s.id === id);
+    if (o) return o.label;
+    return id;
+  });
+
+  if (urgent) p.alert = { type: 'red', text: `Критическое НЯ: ${labels.join(', ')}. Требуется немедленная оценка.` };
+  else if (labels.length) p.alert = { type: 'yellow', text: `НЯ: ${labels.join(', ').toLowerCase()}.` };
+  else p.alert = { type: 'yellow', text: 'Пациент сообщил о неприятных симптомах (описание).' };
+
+  p.events.unshift({ time: 'Только что', text: `НЯ: ${labels.join(', ') || 'описание'}`, dot: urgent ? 'red' : 'yellow' });
+  state.adverse = { symptoms: [], freeText: '' };
+  state.patientScreen = 'home';
+  render();
+  showToast('Сообщение отправлено врачу');
+}
+
+function submitPhq9() {
+  const q9 = state.phq9[8];
+  const p = currentPatient();
+  const sum = state.phq9.reduce((a, b) => a + b, 0);
+  p.events.unshift({ time: 'Только что', text: `Пациент прошёл PHQ-9 (${sum})`, dot: 'purple' });
+  if (q9 > 0) {
+    p.alert = { type: 'red', text: 'Критический алерт: суицидальные мысли (PHQ-9, п.9).' };
+    state.patientScreen = 'emergency'; render(); return;
+  }
+  state.patientScreen = 'home'; render(); showToast('Ответы отправлены ✓');
+}
+function submitGad7() {
+  const sum = state.gad7.reduce((a, b) => a + b, 0);
+  const p = currentPatient();
+  p.events.unshift({ time: 'Только что', text: `Пациент прошёл GAD-7 (${sum})`, dot: 'purple' });
+  state.patientScreen = 'home'; render(); showToast('Ответы отправлены ✓');
+}
+function submitCssrs() {
+  const v = state.cssrs;
+  const p = currentPatient();
+  p.events.unshift({ time: 'Только что', text: `Пациент прошёл C-SSRS: ${v}`, dot: v >= 3 ? 'red' : 'purple' });
+  if (v >= 5) {
+    p.alert = { type: 'red', text: 'Критический алерт: C-SSRS ≥ 5 (план/намерение).' };
+    state.patientScreen = 'emergency'; render(); return;
+  }
+  if (v >= 3) {
+    p.alert = { type: 'red', text: `C-SSRS = ${v}: серьёзный риск. Требуется оценка врача.` };
+    state.patientScreen = 'home'; render(); showToast('Врач получил уведомление'); return;
+  }
+  state.patientScreen = 'home'; render(); showToast('Ответы отправлены ✓');
+}
+
+function handleAction(action, el) {
+  const id = el.dataset.id;
+  const key = el.dataset.key;
+  switch (action) {
+    case 'switch-role': state.role = el.dataset.role; render(); break;
+    case 'open-patient': state.selectedPatientId = id; state.doctorScreen = 'patient'; state.accordions = {}; render(); break;
+    case 'back-to-list': state.doctorScreen = 'list'; render(); break;
+    case 'filter': state.doctorFilter = el.dataset.val; render(); break;
+    case 'dismiss-alert': { const p = getPatient(id); if (p) p.alert = null; render(); showToast('Алерт отмечен как просмотренный'); break; }
+    case 'notify-patient': openModal(notifyPatientModal(id || state.selectedPatientId)); break;
+    case 'send-notify': closeModal(); showToast('Уведомление отправлено пациенту'); break;
+    case 'open-grls': openModal(grlsModal()); break;
+    case 'close-modal': closeModal(); break;
+    case 'toggle-accordion': { const acc = el.dataset.acc; state.accordions[acc] = !state.accordions[acc]; render(); break; }
+    case 'add-patient': showToast('В MVP пациенты добавляются через интеграцию с МИС. Демо-набор фиксирован.'); break;
+    case 'back-home': state.patientScreen = 'home'; state.activeTask = null; render(); break;
+    case 'open-checkin': state.checkin = { morning: null, evening: null, morningReason: null, eveningReason: null, morningReasonOther: '', eveningReasonOther: '' }; state.patientScreen = 'checkin'; render(); break;
+    case 'open-adverse': state.patientScreen = 'adverse'; render(); break;
+    case 'open-phq9': state.patientScreen = 'phq9'; render(); break;
+    case 'open-gad7': state.patientScreen = 'gad7'; render(); break;
+    case 'open-cssrs': state.patientScreen = 'cssrs'; render(); break;
+    case 'open-psycho': state.patientScreen = 'psycho'; render(); break;
+    case 'open-selfhelp': state.patientScreen = 'selfhelp'; render(); break;
+    case 'open-stats': state.patientScreen = 'stats'; render(); break;
+    case 'open-reminders': state.patientScreen = 'reminders'; render(); break;
+    case 'open-contact-doctor': openModal(contactDoctorModal()); break;
+    case 'toggle-scales': state.scalesOpen = !state.scalesOpen; render(); break;
+    case 'set-dose': {
+      const v = el.dataset.val === 'yes';
+      state.checkin[key] = v;
+      if (v) { state.checkin[key + 'Reason'] = null; state.checkin[key + 'ReasonOther'] = ''; }
+      render(); break;
+    }
+    case 'set-reason': state.checkin[key + 'Reason'] = el.dataset.val; render(); break;
+    case 'submit-checkin': submitCheckin(); break;
+    case 'toggle-adverse': {
+      const s = el.dataset.id;
+      const i = state.adverse.symptoms.indexOf(s);
+      if (i >= 0) state.adverse.symptoms.splice(i, 1); else state.adverse.symptoms.push(s);
+      render(); break;
+    }
+    case 'submit-adverse': submitAdverse(); break;
+    case 'phq9-answer': state.phq9[+el.dataset.q] = +el.dataset.v; render(); break;
+    case 'gad7-answer': state.gad7[+el.dataset.q] = +el.dataset.v; render(); break;
+    case 'cssrs-answer': state.cssrs = +el.dataset.v; render(); break;
+    case 'submit-phq9': submitPhq9(); break;
+    case 'submit-gad7': submitGad7(); break;
+    case 'submit-cssrs': submitCssrs(); break;
+    case 'open-task': { if (state.dailyTasks[key].done) { showToast('Уже заполнено'); break; } state.activeTask = key; render(); break; }
+    case 'set-task-value': {
+      state.dailyTasks[key].done = true;
+      state.dailyTasks[key].value = el.dataset.val;
+      state.activeTask = null;
+      render(); showToast('Сохранено ✓'); break;
+    }
+    case 'read-article': showToast('Открытие материала (демо)'); break;
+    case 'open-tool': showToast('Запуск упражнения (демо)'); break;
+    case 'toggle-reminder': { const r = state.reminders.find(x => x.id === +id); if (r) r.on = !r.on; render(); break; }
+  }
+}
+
+/* ============ EVENTS ============ */
+document.addEventListener('click', e => {
+  const overlay = e.target.closest('.modal-overlay');
+  if (overlay && e.target === overlay) { closeModal(); return; }
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const a = el.dataset.action;
+  if (a === 'search') return;
+  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return;
+  if (['note-input','notify-text','reason-other','adverse-text'].includes(a)) return;
+  handleAction(a, el);
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.action === 'search') { state.search = t.value; render(); }
+  else if (t.dataset.action === 'adverse-text') { state.adverse.freeText = t.value; }
+  else if (t.dataset.action === 'reason-other') { state.checkin[t.dataset.key + 'ReasonOther'] = t.value; }
+  else if (t.dataset.action === 'note-input') {
+    const pid = t.dataset.id;
+    if (!state.doctorNotes[pid]) state.doctorNotes[pid] = { phq9:'', gad7:'', cssrs:'', hamA:'', hamD:'', otherTests:'', impression:'', note:'' };
+    state.doctorNotes[pid][t.dataset.field] = t.value;
+  }
+});
+
+/* ============ INIT ============ */
+state.phq9 = [1,1,2,1,1,1,2,1,0];
+state.gad7 = [1,1,1,1,1,1,1];
+state.cssrs = 0;
+render();
+</script>
+</body>
+</html>
